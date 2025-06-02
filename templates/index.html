@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Background Remover - Before & After</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #eee;
+    text-align: center;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #0ff;
+    text-shadow: 0 0 8px #0ff;
+  }
+  #upload-section {
+    margin-bottom: 30px;
+  }
+  input[type="file"] {
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background: #222;
+    color: #eee;
+    cursor: pointer;
+  }
+  button {
+    background: #0ff;
+    border: none;
+    padding: 12px 24px;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #121212;
+    font-weight: 700;
+    transition: background 0.3s ease;
+    margin-left: 10px;
+  }
+  button:hover {
+    background: #00d8d8;
+  }
+  #result {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .image-container {
+    background: #222;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px #0ff66a99;
+    max-width: 400px;
+    flex: 1 1 400px;
+  }
+  .image-container h2 {
+    margin-bottom: 12px;
+    color: #0ff;
+  }
+  img {
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 0 15px #0ff66a99;
+  }
+  a.download-link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 18px;
+    background: #0ff;
+    color: #121212;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+    box-shadow: 0 0 8px #0ff;
+    transition: background 0.3s ease;
+  }
+  a.download-link:hover {
+    background: #00d8d8;
+  }
+  #loading {
+    font-size: 20px;
+    color: #0ff;
+    margin-top: 20px;
+  }
+  @media (max-width: 850px) {
+    #result {
+      flex-direction: column;
+      gap: 20px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<h1>Background Remover</h1>
+
+<div id="upload-section">
+  <input type="file" id="imageInput" accept="image/*" />
+  <button onclick="removeBackground()">Remove Background</button>
+</div>
+
+<div id="loading"></div>
+
+<div id="result"></div>
+
+<script>
+async function removeBackground() {
+  const input = document.getElementById('imageInput');
+  const loadingDiv = document.getElementById('loading');
+  const resultDiv = document.getElementById('result');
+
+  if (input.files.length === 0) {
+    alert('Please select an image first.');
+    return;
+  }
+
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append('image', file);
+
+  loadingDiv.textContent = 'Processing image, please wait...';
+  resultDiv.innerHTML = '';
+
+  try {
+    const response = await fetch('/remove_bg', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      loadingDiv.textContent = '';
+      resultDiv.textContent = 'Error: ' + errorData.error;
+      return;
+    }
+
+    const blob = await response.blob();
+    const removedBgUrl = URL.createObjectURL(blob);
+    const originalUrl = URL.createObjectURL(file);
+
+    loadingDiv.textContent = '';
+
+    resultDiv.innerHTML = `
+      <div class="image-container">
+        <h2>Original Image</h2>
+        <img src="${originalUrl}" alt="Original Image" />
+      </div>
+      <div class="image-container">
+        <h2>Background Removed</h2>
+        <img src="${removedBgUrl}" alt="Background Removed Image" />
+        <a href="${removedBgUrl}" download="no_background.png" class="download-link">Download Image</a>
+      </div>
+    `;
+
+  } catch (err) {
+    loadingDiv.textContent = '';
+    resultDiv.textContent = 'Error: ' + err.message;
+  }
+}
+</script>
+
+</body>
+</html>
